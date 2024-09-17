@@ -238,7 +238,7 @@
             <div id="channel-list"></div>
             <div id="player-container">
                 <div id="video-wrapper">
-                    <video-js id="my-video" class="video-js vjs-big-play-centered" controls preload="auto" data-setup='{"techOrder": ["html5"]}'>
+                    <video-js id="my-video" class="video-js vjs-big-play-centered" controls preload="auto" data-setup='{"techOrder": ["html5"]}' >
                         <p class="vjs-no-js">
                             To view this video please enable JavaScript, and consider upgrading to a web browser that
                             <a href="https://videojs.com/html5-video-support/" target="_blank">supports HTML5 video</a>
@@ -257,7 +257,7 @@
     </div>
 
     <script>
-        // JavaScript 代码保持不变
+        // JavaScript 代码更新，支持IPv6
         const playlistUrl = 'https://raw.githubusercontent.com/sdlkhfksl/IPTV-txt/Files/CCTV.m3u';
         const channelList = document.getElementById('channel-list');
         const player = videojs('my-video', {
@@ -271,10 +271,10 @@
         let currentChannelIndex = -1;
         let channels = [];
 
-        function isValidIpv4Url(string) {
+        function isValidUrl(string) {
             try {
                 const url = new URL(string);
-                return !string.includes('[') && !string.includes(']');
+                return url.protocol === "http:" || url.protocol === "https:"; // 接受HTTP或HTTPS链接，不再区分IPv4或IPv6
             } catch (_) {
                 return false;
             }
@@ -303,11 +303,10 @@
                     type: 'application/x-mpegURL',
                     src: channel.url
                 });
-                player.play();
-                channelList.querySelectorAll('button').forEach(btn => btn.classList.remove('active'));
-                channelList.children[index].classList.add('active');
                 currentChannelIndex = index;
-                channelList.children[index].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                channelList.querySelectorAll('button').forEach((button, i) => {
+                    button.classList.toggle('active', i === currentChannelIndex);
+                });
             }
         }
 
@@ -319,8 +318,8 @@
                     if (lines[i].startsWith('#EXTINF')) {
                         const tvgInfo = extractTvgInfo(lines[i]);
                         const title = lines[i].split(',')[1];
-                        const url = parseM3ULine(lines[i+1]);
-                        if (url && isValidIpv4Url(url)) {
+                        const url = parseM3ULine(lines[i + 1]);
+                        if (url && isValidUrl(url)) {
                             channels.push({ title, url, tvgInfo });
                             const button = document.createElement('button');
                             const channelItem = document.createElement('div');
@@ -330,7 +329,7 @@
                                 const img = document.createElement('img');
                                 img.src = tvgInfo.logo;
                                 img.className = 'channel-icon';
-                                img.onerror = function() { this.style.display = 'none'; };
+                                img.onerror = function () { this.style.display = 'none'; };
                                 channelItem.appendChild(img);
                             }
 
@@ -358,56 +357,21 @@
                 if (channels.length > 0) {
                     playChannel(0);
                 }
-                // 修复鼠标点击bug
                 channelList.querySelectorAll('button').forEach((button, index) => {
-                    button.onclick = function() {
+                    button.onclick = function () {
                         playChannel(index);
                     };
                 });
             })
             .catch(error => console.error('Error:', error));
 
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'ArrowUp') {
-                playChannel(Math.max(0, currentChannelIndex - 1));
-            } else if (e.key === 'ArrowDown') {
-                playChannel(Math.min(channels.length - 1, currentChannelIndex + 1));
-            } else if (e.key === 'Enter') {
-                playChannel(currentChannelIndex);
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'ArrowUp') {
+                playChannel((currentChannelIndex - 1 + channels.length) % channels.length);
+            } else if (event.key === 'ArrowDown') {
+                playChannel((currentChannelIndex + 1) % channels.length);
             }
         });
-
-        document.getElementById('prev-channel').addEventListener('click', function() {
-            playChannel(Math.max(0, currentChannelIndex - 1));
-        });
-
-        document.getElementById('next-channel').addEventListener('click', function() {
-            playChannel(Math.min(channels.length - 1, currentChannelIndex + 1));
-        });
-
-        // 添加触摸屏滑动切换频道功能
-        let touchStartX = 0;
-        let touchEndX = 0;
-
-        document.addEventListener('touchstart', function(e) {
-            touchStartX = e.changedTouches[0].screenX;
-        }, false);
-
-        document.addEventListener('touchend', function(e) {
-            touchEndX = e.changedTouches[0].screenX;
-            handleSwipe();
-        }, false);
-
-        function handleSwipe() {
-            if (touchEndX < touchStartX) {
-                // 向左滑动，下一个频道
-                playChannel(Math.min(channels.length - 1, currentChannelIndex + 1));
-            }
-            if (touchEndX > touchStartX) {
-                // 向右滑动，上一个频道
-                playChannel(Math.max(0, currentChannelIndex - 1));
-            }
-        }
     </script>
 </body>
 </html>
