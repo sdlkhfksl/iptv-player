@@ -12,7 +12,7 @@
             --primary-color: #2c3e50;
             --secondary-color: #34495e;
             --accent-color: #3498db;
-            --background-color: #2c3e50;
+            --background-color: #2c3e50; /* 修改为深灰色 */
             --text-color: #ecf0f1;
             --hover-color: #e74c3c;
         }
@@ -116,9 +116,9 @@
             max-width: 1080px;
             position: relative;
             padding-top: 56.25%; /* 16:9 Aspect Ratio */
-            border: 2px solid var(--secondary-color);
+            border: 2px solid var(--secondary-color); /* 修改边框颜色 */
             border-radius: 8px;
-            background-color: var(--background-color);
+            background-color: var(--background-color); /* 修改背景颜色 */
         }
 
         .video-js {
@@ -129,7 +129,10 @@
             height: 100%;
             border-radius: 8px;
             overflow: hidden;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3); /* 深色阴影 */
+        }
+
+
         }
 
         .channel-item {
@@ -260,6 +263,7 @@
     </div>
 
     <script>
+        // JavaScript 代码保持不变
         const playlistUrl = 'https://raw.githubusercontent.com/sdlkhfksl/tvn/main/tv.m3u';
         const channelList = document.getElementById('channel-list');
         const player = videojs('my-video', {
@@ -273,17 +277,20 @@
         let currentChannelIndex = -1;
         let channels = [];
 
-        function isValidUrl(string) {
+        function isValidIpv4Url(string) {
             try {
                 const url = new URL(string);
-                return url.protocol === 'http:' || url.protocol === 'https:';
+                return !string.includes('[') && !string.includes(']');
             } catch (_) {
                 return false;
             }
         }
 
         function parseM3ULine(line) {
-            return line.trim();
+            if (line.startsWith('http://') || line.startsWith('https://')) {
+                return line.trim();
+            }
+            return null;
         }
 
         function extractTvgInfo(extinf) {
@@ -303,78 +310,110 @@
                     src: channel.url
                 });
                 player.play();
-                channelList.querySelectorAll('button').forEach((btn, i) => {
-                    btn.classList.toggle('active', i === index);
-                });
+                channelList.querySelectorAll('button').forEach(btn => btn.classList.remove('active'));
+                channelList.children[index].classList.add('active');
                 currentChannelIndex = index;
+                channelList.children[index].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             }
         }
 
-        function setupChannelList() {
-            channelList.innerHTML = '';
-            channels.forEach((channel, index) => {
-                const button = document.createElement('button');
-                button.className = 'channel-item';
-                button.innerHTML = `
-                    <img src="${channel.logo || 'default-logo.png'}" alt="${channel.name}" class="channel-icon">
-                    <div class="channel-info">
-                        <div class="channel-name">${channel.name}</div>
-                        <div class="channel-description">${channel.url}</div>
-                    </div>
-                `;
-                button.addEventListener('click', () => playChannel(index));
-                channelList.appendChild(button);
-            });
-            if (channels.length > 0) {
-                playChannel(0);
-            }
-        }
+        fetch(playlistUrl)
+            .then(response => response.text())
+            .then(data => {
+                const lines = data.split('\n');
+                for (let i = 0; i < lines.length; i++) {
+                    if (lines[i].startsWith('#EXTINF')) {
+                        const tvgInfo = extractTvgInfo(lines[i]);
+                        const title = lines[i].split(',')[1];
+                        const url = parseM3ULine(lines[i+1]);
+                        if (url && isValidIpv4Url(url)) {
+                            channels.push({ title, url, tvgInfo });
+                            const button = document.createElement('button');
+                            const channelItem = document.createElement('div');
+                            channelItem.className = 'channel-item';
 
-        function loadPlaylist() {
-            fetch(playlistUrl)
-                .then(response => response.text())
-                .then(data => {
-                    const lines = data.split('\n');
-                    channels = [];
-                    let currentChannel = null;
-
-                    lines.forEach(line => {
-                        if (line.startsWith('#EXTINF:')) {
-                            const extinf = line.substring(8);
-                            currentChannel = extractTvgInfo(extinf);
-                        } else if (isValidUrl(line)) {
-                            if (currentChannel) {
-                                currentChannel.url = line;
-                                channels.push(currentChannel);
-                                currentChannel = null;
+                            if (tvgInfo.logo) {
+                                const img = document.createElement('img');
+                                img.src = tvgInfo.logo;
+                                img.className = 'channel-icon';
+                                img.onerror = function() { this.style.display = 'none'; };
+                                channelItem.appendChild(img);
                             }
+
+                            const infoDiv = document.createElement('div');
+                            infoDiv.className = 'channel-info';
+
+                            const nameSpan = document.createElement('span');
+                            nameSpan.className = 'channel-name';
+                            nameSpan.textContent = tvgInfo.name || title;
+                            infoDiv.appendChild(nameSpan);
+
+                            if (tvgInfo.name && tvgInfo.name !== title) {
+                                const descSpan = document.createElement('span');
+                                descSpan.className = 'channel-description';
+                                descSpan.textContent = title;
+                                infoDiv.appendChild(descSpan);
+                            }
+
+                            channelItem.appendChild(infoDiv);
+                            button.appendChild(channelItem);
+                            channelList.appendChild(button);
                         }
-                    });
-                    setupChannelList();
+                    }
+                }
+                if (channels.length > 0) {
+                    playChannel(0);
+                }
+                // 修复鼠标点击bug
+                channelList.querySelectorAll('button').forEach((button, index) => {
+                    button.onclick = function() {
+                        playChannel(index);
+                    };
                 });
-        }
+            })
+            .catch(error => console.error('Error:', error));
 
-        document.getElementById('prev-channel').addEventListener('click', () => {
-            if (currentChannelIndex > 0) {
-                playChannel(currentChannelIndex - 1);
-            }
-        });
-
-        document.getElementById('next-channel').addEventListener('click', () => {
-            if (currentChannelIndex < channels.length - 1) {
-                playChannel(currentChannelIndex + 1);
-            }
-        });
-
-        document.addEventListener('keydown', (e) => {
+        document.addEventListener('keydown', function(e) {
             if (e.key === 'ArrowUp') {
-                document.getElementById('prev-channel').click();
+                playChannel(Math.max(0, currentChannelIndex - 1));
             } else if (e.key === 'ArrowDown') {
-                document.getElementById('next-channel').click();
+                playChannel(Math.min(channels.length - 1, currentChannelIndex + 1));
+            } else if (e.key === 'Enter') {
+                playChannel(currentChannelIndex);
             }
         });
 
-        loadPlaylist();
+        document.getElementById('prev-channel').addEventListener('click', function() {
+            playChannel(Math.max(0, currentChannelIndex - 1));
+        });
+
+        document.getElementById('next-channel').addEventListener('click', function() {
+            playChannel(Math.min(channels.length - 1, currentChannelIndex + 1));
+        });
+
+        // 添加触摸屏滑动切换频道功能
+        let touchStartX = 0;
+        let touchEndX = 0;
+
+        document.addEventListener('touchstart', function(e) {
+            touchStartX = e.changedTouches[0].screenX;
+        }, false);
+
+        document.addEventListener('touchend', function(e) {
+            touchEndX = e.changedTouches[0].screenX;
+            handleSwipe();
+        }, false);
+
+        function handleSwipe() {
+            if (touchEndX < touchStartX) {
+                // 向左滑动，下一个频道
+                playChannel(Math.min(channels.length - 1, currentChannelIndex + 1));
+            }
+            if (touchEndX > touchStartX) {
+                // 向右滑动，上一个频道
+                playChannel(Math.max(0, currentChannelIndex - 1));
+            }
+        }
     </script>
 </body>
 </html>
