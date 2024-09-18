@@ -1,43 +1,57 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Free IPTV</title>
-    <link href="https://vjs.zencdn.net/7.20.3/video-js.min.css" rel="stylesheet">
-    <script src="https://vjs.zencdn.net/7.20.3/video.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;700&display=swap" rel="stylesheet">
+    <title>IPTV Player</title>
+    <link href="https://vjs.zencdn.net/7.11.4/video-js.css" rel="stylesheet" />
     <style>
-        /* 样式保持不变 */
+        #channel-list {
+            display: flex;
+            flex-direction: column;
+            max-height: 300px;
+            overflow-y: auto;
+            width: 300px;
+        }
+        .channel-item {
+            display: flex;
+            align-items: center;
+            margin: 5px 0;
+        }
+        .channel-icon {
+            width: 50px;
+            height: 50px;
+            margin-right: 10px;
+        }
+        .channel-info {
+            display: flex;
+            flex-direction: column;
+        }
+        .channel-name {
+            font-weight: bold;
+        }
+        .channel-description {
+            font-size: 0.9em;
+            color: gray;
+        }
+        .active {
+            background-color: #ccc;
+        }
     </style>
 </head>
 <body>
-    <header>
-        <h1>Free IPTV</h1>
-    </header>
-    <div class="container">
-        <div class="content">
-            <div id="channel-list"></div>
-            <div id="player-container">
-                <div id="video-wrapper">
-                    <video-js id="my-video" class="video-js vjs-big-play-centered" controls preload="auto" data-setup='{"techOrder": ["html5"]}'>
-                        <p class="vjs-no-js">
-                            To view this video please enable JavaScript, and consider upgrading to a web browser that
-                            <a href="https://videojs.com/html5-video-support/" target="_blank">supports HTML5 video</a>
-                        </p>
-                    </video-js>
-                </div>
-            </div>
-        </div>
-        <div id="controls">
-            <button id="prev-channel">上一个频道</button>
-            <button id="next-channel">下一个频道</button>
-        </div>
-        <div id="keyboard-info">
-            使用键盘上下方向键可以切换频道，回车键确认选择
-        </div>
+    <div>
+        <video id="my-video" class="video-js vjs-default-skin" controls preload="auto" width="640" height="264" data-setup="{}">
+            <source src="" type="application/x-mpegURL">
+        </video>
     </div>
 
+    <div id="channel-list"></div>
+
+    <button id="prev-channel">Previous Channel</button>
+    <button id="next-channel">Next Channel</button>
+
+    <script src="https://vjs.zencdn.net/7.11.4/video.js"></script>
     <script>
         const playlistUrl = 'https://raw.githubusercontent.com/sdlkhfksl/tvn/main/tv.m3u';
         const channelList = document.getElementById('channel-list');
@@ -52,12 +66,21 @@
         let currentChannelIndex = -1;
         let channels = [];
 
-        // 支持IPv4和IPv6的URL验证函数
+        // 添加日志记录功能
+        function logInfo(message) {
+            console.log(`[INFO] ${new Date().toISOString()}: ${message}`);
+        }
+
+        function logError(message) {
+            console.error(`[ERROR] ${new Date().toISOString()}: ${message}`);
+        }
+
         function isValidUrl(string) {
             try {
-                const url = new URL(string);
-                return (url.protocol === 'http:' || url.protocol === 'https:');
-            } catch (_) {
+                new URL(string);
+                return true;
+            } catch (error) {
+                logError(`Invalid URL: ${string}`);
                 return false;
             }
         }
@@ -81,27 +104,43 @@
         function playChannel(index) {
             if (index >= 0 && index < channels.length) {
                 const channel = channels[index];
+                logInfo(`Playing channel: ${channel.title} (${channel.url})`);
+                
                 player.src({
                     type: 'application/x-mpegURL',
                     src: channel.url
                 });
-                player.play();
+
+                // 捕获播放错误事件
+                player.on('error', function () {
+                    const error = player.error();
+                    logError(`Playback error: Code ${error.code}, Message: ${error.message}`);
+                });
+
+                player.play().catch(error => {
+                    logError(`Failed to play channel: ${channel.title}. Error: ${error.message}`);
+                });
+
                 channelList.querySelectorAll('button').forEach(btn => btn.classList.remove('active'));
                 channelList.children[index].classList.add('active');
                 currentChannelIndex = index;
                 channelList.children[index].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            } else {
+                logError(`Invalid channel index: ${index}`);
             }
         }
 
         fetch(playlistUrl)
             .then(response => response.text())
             .then(data => {
+                logInfo("Fetched playlist successfully.");
                 const lines = data.split('\n');
                 for (let i = 0; i < lines.length; i++) {
                     if (lines[i].startsWith('#EXTINF')) {
                         const tvgInfo = extractTvgInfo(lines[i]);
                         const title = lines[i].split(',')[1];
-                        const url = parseM3ULine(lines[i + 1]);
+                        const url = parseM3ULine(lines[i+1]);
+
                         if (url && isValidUrl(url)) {
                             channels.push({ title, url, tvgInfo });
                             const button = document.createElement('button');
@@ -134,19 +173,25 @@
                             channelItem.appendChild(infoDiv);
                             button.appendChild(channelItem);
                             channelList.appendChild(button);
+                        } else {
+                            logError(`Invalid channel URL at line ${i + 1}: ${lines[i + 1]}`);
                         }
                     }
                 }
                 if (channels.length > 0) {
                     playChannel(0);
+                } else {
+                    logError("No valid channels found in the playlist.");
                 }
+
+                // 修复鼠标点击bug
                 channelList.querySelectorAll('button').forEach((button, index) => {
                     button.onclick = function() {
                         playChannel(index);
                     };
                 });
             })
-            .catch(error => console.error('Error:', error));
+            .catch(error => logError(`Failed to fetch playlist: ${error.message}`));
 
         document.addEventListener('keydown', function(e) {
             if (e.key === 'ArrowUp') {
