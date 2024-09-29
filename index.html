@@ -6,6 +6,7 @@
     <title>Free IPTV</title>
     <link href="https://vjs.zencdn.net/7.20.3/video-js.min.css" rel="stylesheet">
     <script src="https://vjs.zencdn.net/7.20.3/video.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/videojs-flash@2.0.0/dist/videojs-flash.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -132,9 +133,6 @@
             box-shadow: 0 4px 6px rgba(0,0,0,0.3); /* 深色阴影 */
         }
 
-
-        }
-
         .channel-item {
             display: flex;
             align-items: center;
@@ -244,7 +242,7 @@
             <div id="channel-list"></div>
             <div id="player-container">
                 <div id="video-wrapper">
-                    <video-js id="my-video" class="video-js vjs-big-play-centered" controls preload="auto" data-setup='{"techOrder": ["html5"]}'>
+                    <video-js id="my-video" class="video-js vjs-big-play-centered" controls preload="auto" data-setup='{"techOrder": ["flash", "html5"]}'>
                         <p class="vjs-no-js">
                             To view this video please enable JavaScript, and consider upgrading to a web browser that
                             <a href="https://videojs.com/html5-video-support/" target="_blank">supports HTML5 video</a>
@@ -263,10 +261,10 @@
     </div>
 
     <script>
-        // JavaScript 代码保持不变
         const playlistUrl = 'https://raw.githubusercontent.com/sdlkhfksl/tvn/refs/heads/main/tv.m3u';
         const channelList = document.getElementById('channel-list');
         const player = videojs('my-video', {
+            techOrder: ['flash', 'html5'],
             html5: {
                 hls: {
                     overrideNative: true
@@ -287,7 +285,7 @@
         }
 
         function parseM3ULine(line) {
-            if (line.startsWith('http://') || line.startsWith('https://')) {
+            if (line.startsWith('http://') || line.startsWith('https://') || line.startsWith('rtmp://')) {
                 return line.trim();
             }
             return null;
@@ -306,7 +304,7 @@
             if (index >= 0 && index < channels.length) {
                 const channel = channels[index];
                 player.src({
-                    type: 'application/x-mpegURL',
+                    type: channel.url.startsWith('rtmp://') ? 'rtmp/flv' : 'application/x-mpegURL',
                     src: channel.url
                 });
                 player.play();
@@ -325,7 +323,7 @@
                     if (lines[i].startsWith('#EXTINF')) {
                         const tvgInfo = extractTvgInfo(lines[i]);
                         const title = lines[i].split(',')[1];
-                        const url = parseM3ULine(lines[i+1]);
+                        const url = parseM3ULine(lines[i + 1]);
                         if (url && isValidIpv4Url(url)) {
                             channels.push({ title, url, tvgInfo });
                             const button = document.createElement('button');
@@ -364,7 +362,6 @@
                 if (channels.length > 0) {
                     playChannel(0);
                 }
-                // 修复鼠标点击bug
                 channelList.querySelectorAll('button').forEach((button, index) => {
                     button.onclick = function() {
                         playChannel(index);
@@ -391,7 +388,6 @@
             playChannel(Math.min(channels.length - 1, currentChannelIndex + 1));
         });
 
-        // 添加触摸屏滑动切换频道功能
         let touchStartX = 0;
         let touchEndX = 0;
 
@@ -406,14 +402,12 @@
 
         function handleSwipe() {
             if (touchEndX < touchStartX) {
-                // 向左滑动，下一个频道
                 playChannel(Math.min(channels.length - 1, currentChannelIndex + 1));
             }
             if (touchEndX > touchStartX) {
-                // 向右滑动，上一个频道
                 playChannel(Math.max(0, currentChannelIndex - 1));
             }
         }
     </script>
 </body>
-</html>   
+</html>
