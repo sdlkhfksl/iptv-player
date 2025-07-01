@@ -15,6 +15,7 @@
             --text-primary: #eef1f5;
             --text-secondary: #a0aebd;
             --accent: #4f86e7;
+            --error-color: #e74c3c;
             --border-color: rgba(100, 120, 143, 0.3);
             --radius-lg: 20px;
             --radius-md: 14px;
@@ -349,10 +350,20 @@
             gap: 10px;
             color: var(--text-secondary);
             font-size: 0.9rem;
+            transition: color 0.3s ease;
+        }
+        
+        #status-bar.error {
+            color: var(--error-color);
+        }
+        
+        #status-bar.error i {
+            color: var(--error-color);
         }
         
         #status-bar i {
             color: var(--accent);
+            transition: color 0.3s ease;
         }
         
         #loading-indicator {
@@ -483,6 +494,7 @@
         const nextBtn = document.getElementById('next-channel');
         const searchInput = document.getElementById('search-input');
         const loadingIndicator = document.getElementById('loading-indicator');
+        const statusBar = document.getElementById('status-bar');
         const statusMessage = document.getElementById('status-message');
         
         let currentChannel = null;
@@ -565,7 +577,7 @@
                 channelScroll.appendChild(channelElement);
             });
             
-            if (filteredChannels.length === 0) {
+            if (filteredChannels.length === 0 && allChannels.length > 0) {
                 channelScroll.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-secondary);">未找到匹配的频道</div>';
             }
         }
@@ -584,9 +596,9 @@
             }
             
             player.src({ type: 'application/x-mpegURL', src: channel.url });
-            player.play().catch(e => console.error('播放失败:', e));
+            player.play().catch(e => console.error('播放命令失败:', e));
             
-            renderChannelList(); // Re-render to update the 'active' state
+            renderChannelList();
             
             const activeElement = channelScroll.querySelector('.active');
             if (activeElement) {
@@ -595,14 +607,14 @@
         }
         
         function playNext() {
-            if (!currentChannel) return;
+            if (!currentChannel || filteredChannels.length === 0) return;
             const currentIndex = filteredChannels.findIndex(c => c.url === currentChannel.url);
             const nextIndex = (currentIndex + 1) % filteredChannels.length;
             playChannel(filteredChannels[nextIndex]);
         }
 
         function playPrev() {
-            if (!currentChannel) return;
+            if (!currentChannel || filteredChannels.length === 0) return;
             const currentIndex = filteredChannels.findIndex(c => c.url === currentChannel.url);
             const prevIndex = (currentIndex - 1 + filteredChannels.length) % filteredChannels.length;
             playChannel(filteredChannels[prevIndex]);
@@ -632,11 +644,13 @@
                     statusMessage.textContent = `已加载 ${allChannels.length} 个电视频道`;
                 } else {
                     statusMessage.textContent = '未找到可用电视频道';
+                    channelScroll.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-secondary);">播放列表为空或格式错误</div>';
                 }
             } catch (error) {
                 console.error('Error:', error);
                 statusMessage.textContent = '频道列表加载失败';
-                channelScroll.innerHTML = `<div style="text-align: center; padding: 30px; color: #e74c3c;">
+                statusBar.classList.add('error');
+                channelScroll.innerHTML = `<div style="text-align: center; padding: 30px; color: var(--error-color);">
                     <i class="fas fa-exclamation-triangle" style="font-size: 2rem; margin-bottom: 15px;"></i>
                     <p>频道列表加载失败</p>
                     <p style="font-size: 0.9rem; margin-top: 10px;">${error.message || '请检查网络连接'}</p>
@@ -646,17 +660,20 @@
 
         player.on('playing', () => {
             loadingIndicator.style.display = 'none';
+            statusBar.classList.remove('error');
             statusMessage.textContent = `正在播放: ${playerTitle.textContent}`;
         });
         
         player.on('error', () => {
             loadingIndicator.style.display = 'none';
-            statusMessage.textContent = '播放错误，将尝试下一个频道...';
-            setTimeout(playNext, 2000);
+            statusBar.classList.add('error');
+            statusMessage.textContent = `播放错误: ${playerTitle.textContent}`;
+            // ** CRITICAL FIX: NO MORE AUTO-RETRY **
         });
         
         player.on('waiting', () => {
             loadingIndicator.style.display = 'block';
+            statusBar.classList.remove('error');
             statusMessage.textContent = '正在加载...';
         });
         
