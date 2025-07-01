@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Free IPTV - Apple Style</title>
+    <title>Free IPTV - Exquisite Dark Mode</title>
     <link href="https://vjs.zencdn.net/7.20.3/video-js.min.css" rel="stylesheet">
     <script src="https://vjs.zencdn.net/7.20.3/video.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -11,17 +11,17 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --accent-color: #007aff; /* Apple's signature blue */
-            --accent-color-hover: #0056b3;
-            --text-color-primary: #1d1d1f; /* Near-black for primary text */
-            --text-color-secondary: #6e6e73; /* Gray for secondary text */
-            --background-panel: rgba(242, 242, 247, 0.7); /* Semi-transparent light gray */
-            --background-panel-solid: #f2f2f7;
-            --border-color: rgba(0, 0, 0, 0.1);
-            --shadow-color: rgba(0, 0, 0, 0.1);
-            --border-radius-large: 20px;
-            --border-radius-medium: 12px;
-            --border-radius-small: 8px;
+            --bg-main: #16181d;
+            --bg-glass: rgba(28, 30, 37, 0.5);
+            --text-primary: #e0e0e0;
+            --text-secondary: #a0a0a0;
+            --accent-primary: #00e5ff;
+            --accent-secondary: #ff00e5;
+            --border-glow: linear-gradient(145deg, var(--accent-primary), var(--accent-secondary));
+            --shadow-color: rgba(0, 0, 0, 0.3);
+            --radius-l: 24px;
+            --radius-m: 16px;
+            --radius-s: 10px;
         }
 
         * {
@@ -36,63 +36,112 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", sans-serif;
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            background-attachment: fixed;
-            color: var(--text-color-primary);
+            background-color: var(--bg-main);
+            color: var(--text-primary);
             line-height: 1.6;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
+            overflow: hidden; /* Prevent body scrollbars from the animated background */
+        }
+
+        /* === Animated Aurora Background === */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+            background: radial-gradient(circle at 10% 20%, rgba(0, 229, 255, 0.1), transparent 30%),
+                        radial-gradient(circle at 90% 80%, rgba(255, 0, 229, 0.1), transparent 30%),
+                        radial-gradient(circle at 50% 50%, rgba(60, 0, 255, 0.05), transparent 40%);
+            animation: aurora 20s infinite linear;
+        }
+
+        @keyframes aurora {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
 
         .container {
-            max-width: 1400px;
+            max-width: 1500px;
             margin: 0 auto;
             padding: 20px;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
 
         header {
             text-align: center;
-            padding: 25px 0;
-            margin-bottom: 30px;
+            padding: 20px 0;
+            flex-shrink: 0;
         }
 
         h1 {
-            font-size: 2.8em;
+            font-size: 2.5em;
             font-weight: 700;
-            color: var(--text-color-primary);
-            letter-spacing: -1px;
+            color: #fff;
+            letter-spacing: 1px;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
         }
 
         .content {
             display: flex;
             gap: 25px;
+            flex-grow: 1;
+            height: calc(100% - 100px); /* Adjust based on header height */
         }
 
+        /* === Glass Panels with Gradient Border === */
         #channel-list, #player-container {
-            background-color: var(--background-panel);
-            backdrop-filter: blur(25px) saturate(180%);
-            -webkit-backdrop-filter: blur(25px) saturate(180%);
-            border: 1px solid var(--border-color);
-            border-radius: var(--border-radius-large);
-            box-shadow: 0 8px 32px 0 var(--shadow-color);
-            transition: all 0.3s ease;
+            background-color: var(--bg-glass);
+            backdrop-filter: blur(30px) saturate(120%);
+            -webkit-backdrop-filter: blur(30px) saturate(120%);
+            border-radius: var(--radius-l);
+            box-shadow: 0 8px 40px var(--shadow-color);
+            position: relative;
+            overflow: hidden; /* Important for border-image */
+        }
+        
+        /* The gradient border effect */
+        #channel-list::after, #player-container::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            border-radius: var(--radius-l);
+            border: 1px solid transparent;
+            background: var(--border-glow) border-box;
+            -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: destination-out;
+            mask-composite: exclude;
+            pointer-events: none;
         }
 
         #channel-list {
-            flex: 0 0 320px;
-            height: calc(100vh - 180px);
-            overflow-y: auto;
+            flex: 0 0 340px;
+            height: 100%;
             padding: 15px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .channel-list-inner {
+            overflow-y: auto;
+            padding-right: 10px; /* Space for scrollbar */
+            margin-right: -10px; /* Hide scrollbar visually */
         }
 
-        #channel-list::-webkit-scrollbar {
+        .channel-list-inner::-webkit-scrollbar {
             width: 6px;
         }
-        #channel-list::-webkit-scrollbar-track {
+        .channel-list-inner::-webkit-scrollbar-track {
             background: transparent;
         }
-        #channel-list::-webkit-scrollbar-thumb {
-            background-color: rgba(0, 0, 0, 0.2);
+        .channel-list-inner::-webkit-scrollbar-thumb {
+            background-color: rgba(255, 255, 255, 0.2);
             border-radius: 10px;
         }
 
@@ -100,41 +149,47 @@
             display: flex;
             align-items: center;
             width: 100%;
-            padding: 12px;
+            padding: 12px 15px;
             border: none;
             background-color: transparent;
-            color: var(--text-color-primary);
-            text-align: left;
             cursor: pointer;
-            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-            border-radius: var(--border-radius-medium);
+            transition: background-color 0.2s ease-out;
+            border-radius: var(--radius-m);
             margin-bottom: 8px;
+            position: relative;
+            overflow: hidden;
         }
 
         #channel-list button:hover {
-            background-color: rgba(0, 0, 0, 0.05);
-            transform: scale(1.02);
+            background-color: rgba(255, 255, 255, 0.05);
         }
 
+        /* === Exquisite Active State Indicator === */
         #channel-list button.active {
-            background-color: var(--accent-color);
-            color: white;
-            transform: scale(1.02);
-            box-shadow: 0 4px 15px rgba(0, 122, 255, 0.3);
+            background-color: rgba(255, 255, 255, 0.08);
+        }
+
+        #channel-list button.active::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 15%;
+            bottom: 15%;
+            width: 4px;
+            border-radius: 0 4px 4px 0;
+            background-image: var(--border-glow);
+            box-shadow: 0 0 8px var(--accent-primary), 0 0 12px var(--accent-secondary);
         }
         
         #channel-list button.active .channel-name {
-            color: white;
-        }
-        #channel-list button.active .channel-description {
-            color: rgba(255, 255, 255, 0.8);
+            color: #fff;
         }
 
         .channel-item {
             display: flex;
             align-items: center;
-            width: 100%; /* Ensure it fills the button */
-            overflow: hidden; /* Prevent content from spilling out */
+            width: 100%;
+            overflow: hidden;
         }
 
         .channel-icon {
@@ -142,8 +197,8 @@
             height: 40px;
             margin-right: 15px;
             object-fit: contain;
-            border-radius: var(--border-radius-small);
-            background-color: rgba(255, 255, 255, 0.5);
+            border-radius: var(--radius-s);
+            background-color: rgba(255, 255, 255, 0.1);
             padding: 4px;
             flex-shrink: 0;
         }
@@ -159,17 +214,16 @@
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            color: var(--text-color-primary);
-            transition: color 0.25s ease;
+            color: var(--text-primary);
+            transition: color 0.2s ease;
         }
 
         .channel-description {
             font-size: 0.85em;
-            color: var(--text-color-secondary);
+            color: var(--text-secondary);
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            transition: color 0.25s ease;
         }
 
         #player-container {
@@ -183,11 +237,11 @@
         #video-wrapper {
             width: 100%;
             position: relative;
-            padding-top: 56.25%; /* 16:9 Aspect Ratio */
+            padding-top: 56.25%; /* 16:9 */
             background-color: #000;
-            border-radius: var(--border-radius-medium);
+            border-radius: var(--radius-m);
             overflow: hidden;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
         }
 
         .video-js {
@@ -198,75 +252,36 @@
             height: 100%;
         }
 
-        #controls {
-            display: none;
-            justify-content: center;
-            gap: 15px;
-            margin-top: 20px;
-        }
-
-        #controls button {
-            padding: 12px 25px;
-            font-size: 1em;
-            font-weight: 500;
-            background-color: var(--background-panel-solid);
-            color: var(--accent-color);
-            border: 1px solid var(--border-color);
-            border-radius: var(--border-radius-medium);
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        #controls button:hover {
-            background-color: #e9e9ed;
-            transform: translateY(-2px);
-        }
-
-        #keyboard-info {
-            text-align: center;
-            margin-top: 25px;
-            color: var(--text-color-secondary);
-            font-size: 0.9em;
-            background-color: rgba(255, 255, 255, 0.5);
-            padding: 8px 15px;
-            border-radius: var(--border-radius-medium);
-            display: inline-block;
-            left: 50%;
-            position: relative;
-            transform: translateX(-50%);
-        }
+        #controls { display: none; }
+        #keyboard-info { display: none; } /* Hiding these for a cleaner look, can be re-enabled */
 
         @media (max-width: 968px) {
+            body { overflow: auto; }
+            .container { height: auto; }
             .content {
                 flex-direction: column;
+                height: auto;
             }
-
             #channel-list {
-                height: 35vh;
-                flex: none;
+                height: 40vh;
+                order: 2;
             }
-
             #player-container {
-                order: -1;
-            }
-
-            #controls {
-                display: flex;
-            }
-
-            #keyboard-info {
-                display: none;
+                order: 1;
             }
         }
     </style>
 </head>
 <body>
-    <header>
-        <h1>Free IPTV</h1>
-    </header>
     <div class="container">
+        <header>
+            <h1>Free IPTV</h1>
+        </header>
         <div class="content">
-            <div id="channel-list"></div>
+            <div id="channel-list">
+                <!-- A wrapper for custom scrollbar -->
+                <div class="channel-list-inner"></div>
+            </div>
             <div id="player-container">
                 <div id="video-wrapper">
                     <video-js id="my-video" class="video-js vjs-big-play-centered" controls preload="auto" data-setup='{"techOrder": ["html5"]}'>
@@ -278,19 +293,12 @@
                 </div>
             </div>
         </div>
-        <div id="controls">
-            <button id="prev-channel">上一个频道</button>
-            <button id="next-channel">下一个频道</button>
-        </div>
-        <div id="keyboard-info">
-            使用键盘 ↑ ↓ 键切换频道
-        </div>
     </div>
 
     <script>
-        // JavaScript 代码已修正
+        // JavaScript has been slightly modified to append to the new inner div
         const playlistUrl = 'https://raw.githubusercontent.com/sdlkhfksl/tvn/refs/heads/main/tv.m3u';
-        const channelList = document.getElementById('channel-list');
+        const channelListContainer = document.querySelector('.channel-list-inner'); // Target the new inner container
         const player = videojs('my-video', {
             html5: {
                 hls: {
@@ -336,12 +344,12 @@
                 });
                 player.play();
                 
-                const currentActive = channelList.querySelector('button.active');
+                const currentActive = channelListContainer.querySelector('button.active');
                 if (currentActive) {
                     currentActive.classList.remove('active');
                 }
                 
-                const newActiveButton = channelList.children[index];
+                const newActiveButton = channelListContainer.children[index];
                 newActiveButton.classList.add('active');
                 currentChannelIndex = index;
                 
@@ -356,11 +364,11 @@
                 for (let i = 0; i < lines.length; i++) {
                     if (lines[i].startsWith('#EXTINF')) {
                         const tvgInfo = extractTvgInfo(lines[i]);
-                        const title = lines[i].split(',')[1] || '';
+                        const title = (lines[i].split(',')[1] || '').trim();
                         const url = parseM3ULine(lines[i+1]);
                         
                         if (url && isValidIpv4Url(url)) {
-                            channels.push({ title: title.trim(), url, tvgInfo });
+                            channels.push({ title, url, tvgInfo });
                             
                             const button = document.createElement('button');
                             const channelItem = document.createElement('div');
@@ -370,7 +378,7 @@
                                 const img = document.createElement('img');
                                 img.src = tvgInfo.logo;
                                 img.className = 'channel-icon';
-                                img.alt = tvgInfo.name || title.trim();
+                                img.alt = tvgInfo.name || title;
                                 img.onerror = function() { this.style.display = 'none'; };
                                 channelItem.appendChild(img);
                             }
@@ -380,24 +388,19 @@
 
                             const nameSpan = document.createElement('span');
                             nameSpan.className = 'channel-name';
-                            nameSpan.textContent = tvgInfo.name || title.trim();
+                            nameSpan.textContent = tvgInfo.name || title;
                             infoDiv.appendChild(nameSpan);
 
-                            if (tvgInfo.name && tvgInfo.name.toLowerCase() !== title.trim().toLowerCase() && title.trim()) {
+                            if (tvgInfo.name && tvgInfo.name.toLowerCase() !== title.toLowerCase() && title) {
                                 const descSpan = document.createElement('span');
                                 descSpan.className = 'channel-description';
-                                descSpan.textContent = title.trim();
+                                descSpan.textContent = title;
                                 infoDiv.appendChild(descSpan);
                             }
 
-                            // ==================================================
-                            //  这是关键的修复步骤
-                            //  将包含文本的 infoDiv 添加到 channelItem 中
-                            // ==================================================
                             channelItem.appendChild(infoDiv);
-
                             button.appendChild(channelItem);
-                            channelList.appendChild(button);
+                            channelListContainer.appendChild(button); // Append to the inner container
                         }
                     }
                 }
@@ -405,7 +408,7 @@
                     playChannel(0);
                 }
                 
-                channelList.querySelectorAll('button').forEach((button, index) => {
+                Array.from(channelListContainer.children).forEach((button, index) => {
                     button.onclick = function() {
                         playChannel(index);
                     };
@@ -423,14 +426,7 @@
             }
         });
 
-        document.getElementById('prev-channel').addEventListener('click', function() {
-            playChannel(Math.max(0, currentChannelIndex - 1));
-        });
-
-        document.getElementById('next-channel').addEventListener('click', function() {
-            playChannel(Math.min(channels.length - 1, currentChannelIndex + 1));
-        });
-
+        // Touch swipe functionality remains the same
         let touchStartX = 0;
         let touchEndX = 0;
         const playerElement = document.getElementById('player-container');
