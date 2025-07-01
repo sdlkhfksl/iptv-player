@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Free IPTV - Robust Live Filtering</title>
+    <title>Free IPTV - Accurate Live Filtering</title>
     <link href="https://vjs.zencdn.net/7.20.3/video-js.min.css" rel="stylesheet">
     <script src="https://vjs.zencdn.net/7.20.3/video.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -184,17 +184,27 @@
         </div>
     </div>
     
-    <!-- Container for temporary test players -->
-    <div id="test-players-container" style="display: none;"></div>
+    <!-- A single, dedicated, invisible player for testing -->
+    <div id="test-player-wrapper" style="position: absolute; width: 1px; height: 1px; top: -1px; left: -1px; overflow: hidden;">
+        <video id="test-player" class="video-js"></video>
+    </div>
 
     <script>
         const playlistUrl = 'https://raw.githubusercontent.com/sdlkhfksl/tvn/refs/heads/main/tv.m3u';
         const channelListContainer = document.querySelector('.channel-list-inner');
         const statusText = document.getElementById('status-text');
         const progressBar = document.getElementById('progress-bar-inner');
-        const testPlayersContainer = document.getElementById('test-players-container');
         const mainPlayer = videojs('my-video', {
             html5: { hls: { overrideNative: true } }
+        });
+        
+        // Initialize the single, dedicated test player
+        const testPlayer = videojs('test-player', {
+            html5: { hls: { overrideNative: true } },
+            controls: false,
+            autoplay: false,
+            preload: 'auto',
+            muted: true // Muting is crucial for background testing
         });
 
         let currentChannelIndex = -1;
@@ -278,6 +288,41 @@
             currentChannelIndex = index;
         }
 
+        /**
+         * Tests a single channel URL using the dedicated testPlayer.
+         * @param {string} url - The URL of the HLS stream to test.
+         * @returns {Promise<void>} - Resolves if the channel is valid, rejects on error or timeout.
+         */
+        function checkChannelWithTestPlayer(url) {
+            return new Promise((resolve, reject) => {
+                const timeout = 8000; // 8 seconds timeout
+                let timeoutId = null;
+
+                const cleanup = () => {
+                    clearTimeout(timeoutId);
+                    testPlayer.off(['loadedmetadata', 'error']);
+                    testPlayer.reset(); // Reset the player for the next test
+                };
+
+                timeoutId = setTimeout(() => {
+                    cleanup();
+                    reject(new Error('Timeout'));
+                }, timeout);
+
+                testPlayer.one('loadedmetadata', () => {
+                    cleanup();
+                    resolve();
+                });
+
+                testPlayer.one('error', () => {
+                    cleanup();
+                    reject(new Error('Player error'));
+                });
+
+                testPlayer.src({ type: 'application/x-mpegURL', src: url });
+            });
+        }
+
         // --- Main Application Flow ---
         async function main() {
             try {
@@ -303,76 +348,24 @@
                     return;
                 }
 
-                const CONCURRENT_CHECKS = 5;
-                let checkedCount = 0;
                 const totalChannels = allParsedChannels.length;
-
-                const worker = async () => {
-                    while (allParsedChannels.length > 0) {
-                        const channelToCheck = allParsedChannels.shift();
-                        if (!channelToCheck) continue;
-
-                        let tempPlayer;
-                        let videoElement;
-                        try {
-                            // Create a unique ID for the temporary player
-                            const tempPlayerId = `test-player-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-                            videoElement = document.createElement('video');
-                            videoElement.id = tempPlayerId;
-                            videoElement.className = 'video-js';
-                            testPlayersContainer.appendChild(videoElement);
-
-                            // Initialize a full video.js instance for testing
-                            tempPlayer = videojs(tempPlayerId, {
-                                html5: { hls: { overrideNative: true } },
-                                controls: false,
-                                autoplay: false,
-                                preload: 'auto'
-                            });
-
-                            await new Promise((resolve, reject) => {
-                                const timeout = 8000;
-                                let timeoutId = setTimeout(() => reject(new Error('Timeout')), timeout);
-                                
-                                tempPlayer.one('loadedmetadata', () => {
-                                    clearTimeout(timeoutId);
-                                    resolve();
-                                });
-                                tempPlayer.one('error', (e) => {
-                                    clearTimeout(timeoutId);
-                                    reject(new Error('Player error'));
-                                });
-                                
-                                tempPlayer.src({ type: 'application/x-mpegURL', src: channelToCheck.url });
-                            });
-                            
-                            // If we reach here, the channel is valid
-                            addChannelToUI(channelToCheck);
-
-                        } catch (error) {
-                            // Channel is invalid, do nothing
-                        } finally {
-                            // CRITICAL: Clean up the temporary player and its element to prevent memory leaks
-                            if (tempPlayer) {
-                                tempPlayer.dispose();
-                            }
-                            if (videoElement && videoElement.parentNode) {
-                                videoElement.parentNode.removeChild(videoElement);
-                            }
-                            
-                            checkedCount++;
-                            const progress = (checkedCount / totalChannels) * 100;
-                            progressBar.style.width = `${progress}%`;
-                            statusText.textContent = `检测中... (${checkedCount}/${totalChannels}) | 已找到 ${channels.length} 个有效频道`;
-                            if (checkedCount === totalChannels) {
-                                statusText.textContent = `检测完成！共找到 ${channels.length} 个有效频道。`;
-                            }
-                        }
+                for (const [index, channel] of allParsedChannels.entries()) {
+                    try {
+                        await checkChannelWithTestPlayer(channel.url);
+                        addChannelToUI(channel);
+                        console.log(`✅ [${index + 1}/${totalChannels}] Channel OK: ${channel.title}`);
+                    } catch (error) {
+                        console.warn(`❌ [${index + 1}/${totalChannels}] Channel Failed: ${channel.title} (${error.message})`);
+                    } finally {
+                        const progress = ((index + 1) / totalChannels) * 100;
+                        progressBar.style.width = `${progress}%`;
+                        statusText.textContent = `检测中... (${index + 1}/${totalChannels}) | 已找到 ${channels.length} 个有效频道`;
                     }
-                };
-
-                for (let i = 0; i < CONCURRENT_CHECKS; i++) {
-                    worker();
+                }
+                
+                statusText.textContent = `检测完成！共找到 ${channels.length} 个有效频道。`;
+                if (channels.length === 0 && !isFirstChannelPlayed) {
+                    statusText.textContent = '未找到任何可用的频道。';
                 }
 
             } catch (error) {
