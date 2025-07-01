@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Free IPTV - Elegant & Stable Edition</title>
+    <title>Free IPTV - Elegant Edition (Subtitles Fixed)</title>
     <link href="https://vjs.zencdn.net/7.20.3/video-js.min.css" rel="stylesheet">
     <script src="https://vjs.zencdn.net/7.20.3/video.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -173,7 +173,45 @@
 
         #player-container { flex: 1; display: flex; justify-content: center; align-items: center; padding: 20px; }
         #video-wrapper { width: 100%; position: relative; padding-top: 56.25%; background-color: #000; border-radius: var(--radius-m); overflow: hidden; box-shadow: 0 0 40px rgba(0, 0, 0, 0.6); }
-        .video-js { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+        
+        .video-js { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            /* CRITICAL FIX: Do NOT hide overflow on the player itself */
+            overflow: visible; 
+        }
+
+        /* === SUBTITLE STYLES FIX === */
+        .video-js .vjs-text-track-display {
+            /* Ensure subtitles are on top of everything */
+            z-index: 2147483647 !important; 
+            position: absolute;
+            bottom: 10%; /* Position subtitles a bit higher from the bottom controls */
+            left: 5%;
+            right: 5%;
+            width: 90%;
+            height: auto;
+            pointer-events: none; /* Allow clicks to go through to the video */
+        }
+
+        .video-js .vjs-text-track-cue {
+            background-color: rgba(0, 0, 0, 0.7) !important;
+            color: #ffffff !important;
+            font-family: 'Noto Sans SC', sans-serif !important;
+            font-size: 1.5vw !important; /* Responsive font size */
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8) !important;
+            padding: 0.2em 0.5em !important;
+            border-radius: 4px !important;
+            line-height: 1.4 !important;
+            white-space: pre-wrap !important; /* Allow line breaks */
+        }
+        
+        @media (min-width: 1200px) {
+            .video-js .vjs-text-track-cue {
+                font-size: 22px !important; /* Max font size on large screens */
+            }
+        }
+        /* === END OF SUBTITLE FIX === */
+
 
         @media (max-width: 968px) {
             body { overflow: auto; }
@@ -181,6 +219,9 @@
             .content { flex-direction: column; height: auto; }
             #channel-list-wrapper { height: 40vh; order: 2; }
             #player-container { order: 1; }
+            .video-js .vjs-text-track-cue {
+                font-size: 2.5vw !important;
+            }
         }
     </style>
 </head>
@@ -195,7 +236,7 @@
             </div>
             <div id="player-container">
                 <div id="video-wrapper">
-                    <video-js id="my-video" class="video-js vjs-big-play-centered" controls preload="auto" data-setup='{"techOrder": ["html5"]}'>
+                    <video-js id="my-video" class="video-js vjs-big-play-centered" controls preload="auto">
                         <p class="vjs-no-js">To view this video please enable JavaScript.</p>
                     </video-js>
                 </div>
@@ -204,20 +245,22 @@
     </div>
 
     <script>
-        // === THIS SCRIPT BLOCK IS BASED ON YOUR ORIGINAL, PROVEN-WORKING CODE ===
         const playlistUrl = 'https://raw.githubusercontent.com/sdlkhfksl/tvn/refs/heads/main/tv.m3u';
         const channelList = document.getElementById('channel-list');
+        // Correct initialization for Video.js, ensuring it's ready for tracks
         const player = videojs('my-video', {
             html5: {
                 hls: {
                     overrideNative: true
                 }
-            }
+            },
+            tracks: [] // Explicitly tell videojs to be ready for text tracks
         });
 
         let currentChannelIndex = -1;
         let channels = [];
 
+        // --- Helper Functions (from your original, stable code) ---
         function isValidIpv4Url(string) {
             try {
                 const url = new URL(string);
@@ -243,101 +286,103 @@
             };
         }
 
-        function playChannel(index) {
-            if (index >= 0 && index < channels.length) {
-                const channel = channels[index];
-                player.src({
-                    type: 'application/x-mpegURL',
-                    src: channel.url
-                });
-                player.play();
+        function renderChannelList() {
+            channelList.innerHTML = '';
+            channels.forEach((channel, index) => {
+                const button = document.createElement('button');
+                button.title = channel.title || '';
                 
-                const currentActive = channelList.querySelector('button.active');
-                if (currentActive) currentActive.classList.remove('active');
-                
-                const newActiveButton = channelList.children[index];
-                newActiveButton.classList.add('active');
-                
-                // Scroll into view only if it's not already visible
-                const listRect = channelList.getBoundingClientRect();
-                const buttonRect = newActiveButton.getBoundingClientRect();
-                if (buttonRect.top < listRect.top || buttonRect.bottom > listRect.bottom) {
-                    newActiveButton.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                const channelItem = document.createElement('div');
+                channelItem.className = 'channel-item';
+
+                const iconWrapper = document.createElement('div');
+                iconWrapper.className = 'channel-icon-wrapper';
+                if (channel.tvgInfo.logo) {
+                    const img = document.createElement('img');
+                    img.src = channel.tvgInfo.logo;
+                    img.className = 'channel-icon';
+                    img.alt = '';
+                    img.onerror = function() { this.remove(); };
+                    iconWrapper.appendChild(img);
                 }
-                
-                currentChannelIndex = index;
-            }
+                channelItem.appendChild(iconWrapper);
+
+                const infoDiv = document.createElement('div');
+                infoDiv.className = 'channel-info';
+                const nameSpan = document.createElement('span');
+                nameSpan.className = 'channel-name';
+                nameSpan.textContent = channel.tvgInfo.name || channel.title;
+                infoDiv.appendChild(nameSpan);
+
+                if (tvgInfo.name && channel.title && tvgInfo.name.trim() !== channel.title.trim()) {
+                    const descSpan = document.createElement('span');
+                    descSpan.className = 'channel-description';
+                    descSpan.textContent = channel.title;
+                    infoDiv.appendChild(descSpan);
+                }
+
+                channelItem.appendChild(infoDiv);
+                button.appendChild(channelItem);
+                button.onclick = () => playChannel(index);
+                channelList.appendChild(button);
+            });
         }
 
-        fetch(playlistUrl)
-            .then(response => response.text())
-            .then(data => {
+        function playChannel(index) {
+            if (index < 0 || index >= channels.length) return;
+            
+            const channel = channels[index];
+            player.src({ type: 'application/x-mpegURL', src: channel.url });
+            player.play();
+
+            const currentActive = channelList.querySelector('button.active');
+            if (currentActive) currentActive.classList.remove('active');
+            
+            const buttons = channelList.querySelectorAll('button');
+            if (buttons[index]) {
+                buttons[index].classList.add('active');
+                if (currentChannelIndex === -1) {
+                    buttons[index].scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }
+            currentChannelIndex = index;
+        }
+
+        // --- Main Application Flow ---
+        async function main() {
+            try {
+                const response = await fetch(playlistUrl);
+                const data = await response.text();
                 const lines = data.split('\n');
+                
                 for (let i = 0; i < lines.length; i++) {
                     if (lines[i].startsWith('#EXTINF')) {
                         const tvgInfo = extractTvgInfo(lines[i]);
-                        // Using your original, robust title parsing
                         const title = lines[i].split(',')[1]; 
                         const url = parseM3ULine(lines[i+1]);
-
                         if (url && isValidIpv4Url(url)) {
                             channels.push({ title, url, tvgInfo });
-                            const button = document.createElement('button');
-                            
-                            const channelItem = document.createElement('div');
-                            channelItem.className = 'channel-item';
-
-                            const iconWrapper = document.createElement('div');
-                            iconWrapper.className = 'channel-icon-wrapper';
-                            if (tvgInfo.logo) {
-                                const img = document.createElement('img');
-                                img.src = tvgInfo.logo;
-                                img.className = 'channel-icon';
-                                img.alt = '';
-                                img.onerror = function() { this.remove(); };
-                                iconWrapper.appendChild(img);
-                            }
-                            channelItem.appendChild(iconWrapper);
-
-                            const infoDiv = document.createElement('div');
-                            infoDiv.className = 'channel-info';
-
-                            const nameSpan = document.createElement('span');
-                            nameSpan.className = 'channel-name';
-                            nameSpan.textContent = tvgInfo.name || title;
-                            infoDiv.appendChild(nameSpan);
-
-                            // Show description only if it's different and meaningful
-                            if (tvgInfo.name && title && tvgInfo.name.trim() !== title.trim()) {
-                                const descSpan = document.createElement('span');
-                                descSpan.className = 'channel-description';
-                                descSpan.textContent = title;
-                                infoDiv.appendChild(descSpan);
-                            }
-
-                            channelItem.appendChild(infoDiv);
-                            button.appendChild(channelItem);
-                            channelList.appendChild(button);
                         }
                     }
                 }
-                if (channels.length > 0) {
-                    playChannel(0);
-                }
-                
-                // Use Array.from for better compatibility
-                Array.from(channelList.children).forEach((button, index) => {
-                    button.onclick = function() {
-                        playChannel(index);
-                    };
-                });
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                channelList.innerHTML = '<p style="text-align: center; color: var(--text-secondary);">加载频道列表失败。</p>';
-            });
 
-        document.addEventListener('keydown', function(e) {
+                if (channels.length > 0) {
+                    renderChannelList();
+                    playChannel(0);
+                } else {
+                    channelList.innerHTML = '<p style="text-align: center; color: var(--text-secondary);">未找到任何频道。</p>';
+                }
+
+            } catch (error) {
+                console.error('Failed to initialize:', error);
+                channelList.innerHTML = '<p style="text-align: center; color: var(--text-secondary);">加载频道列表失败。</p>';
+            }
+        }
+
+        main();
+
+        // --- Event Listeners for UI interaction ---
+        document.addEventListener('keydown', e => {
             if (e.key === 'ArrowUp') {
                 e.preventDefault();
                 playChannel(Math.max(0, currentChannelIndex - 1));
@@ -347,31 +392,16 @@
             }
         });
 
-        // Touch swipe logic from your original code
-        let touchStartX = 0;
-        let touchEndX = 0;
+        let touchStartX = 0, touchEndX = 0;
         const playerContainer = document.getElementById('player-container');
-
-        playerContainer.addEventListener('touchstart', function(e) {
-            touchStartX = e.changedTouches[0].screenX;
-        }, { passive: true });
-
-        playerContainer.addEventListener('touchend', function(e) {
+        playerContainer.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; }, { passive: true });
+        playerContainer.addEventListener('touchend', e => {
             touchEndX = e.changedTouches[0].screenX;
-            handleSwipe();
+            if (Math.abs(touchStartX - touchEndX) < 50) return;
+            if (touchEndX < touchStartX) playChannel(Math.min(channels.length - 1, currentChannelIndex + 1));
+            if (touchEndX > touchStartX) playChannel(Math.max(0, currentChannelIndex - 1));
         }, { passive: true });
 
-        function handleSwipe() {
-            if (Math.abs(touchStartX - touchEndX) < 50) return; // Threshold
-            if (touchEndX < touchStartX) {
-                playChannel(Math.min(channels.length - 1, currentChannelIndex + 1));
-            }
-            if (touchEndX > touchStartX) {
-                playChannel(Math.max(0, currentChannelIndex - 1));
-            }
-        }
-
-        // Mouse move listener for the hover glow effect
         channelList.addEventListener('mousemove', e => {
             const button = e.target.closest('button');
             if (button) {
