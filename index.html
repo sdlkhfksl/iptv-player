@@ -36,7 +36,6 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", sans-serif;
-            /* A subtle, colorful background to make the glass effect pop */
             background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
             background-attachment: fixed;
             color: var(--text-color-primary);
@@ -69,7 +68,6 @@
             gap: 25px;
         }
 
-        /* Frosted Glass Effect for Panels */
         #channel-list, #player-container {
             background-color: var(--background-panel);
             backdrop-filter: blur(25px) saturate(180%);
@@ -87,7 +85,6 @@
             padding: 15px;
         }
 
-        /* Modern Scrollbar */
         #channel-list::-webkit-scrollbar {
             width: 6px;
         }
@@ -133,6 +130,13 @@
             color: rgba(255, 255, 255, 0.8);
         }
 
+        .channel-item {
+            display: flex;
+            align-items: center;
+            width: 100%; /* Ensure it fills the button */
+            overflow: hidden; /* Prevent content from spilling out */
+        }
+
         .channel-icon {
             width: 40px;
             height: 40px;
@@ -146,6 +150,7 @@
 
         .channel-info {
             overflow: hidden;
+            flex-grow: 1;
         }
 
         .channel-name {
@@ -237,12 +242,12 @@
             }
 
             #channel-list {
-                height: 35vh; /* More space on mobile */
+                height: 35vh;
                 flex: none;
             }
 
             #player-container {
-                order: -1; /* Player comes first on mobile */
+                order: -1;
             }
 
             #controls {
@@ -283,7 +288,7 @@
     </div>
 
     <script>
-        // JavaScript 代码保持不变
+        // JavaScript 代码已修正
         const playlistUrl = 'https://raw.githubusercontent.com/sdlkhfksl/tvn/refs/heads/main/tv.m3u';
         const channelList = document.getElementById('channel-list');
         const player = videojs('my-video', {
@@ -340,7 +345,6 @@
                 newActiveButton.classList.add('active');
                 currentChannelIndex = index;
                 
-                // Modern scrollIntoView for better experience
                 newActiveButton.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             }
         }
@@ -354,10 +358,11 @@
                         const tvgInfo = extractTvgInfo(lines[i]);
                         const title = lines[i].split(',')[1] || '';
                         const url = parseM3ULine(lines[i+1]);
+                        
                         if (url && isValidIpv4Url(url)) {
                             channels.push({ title: title.trim(), url, tvgInfo });
-                            const button = document.createElement('button');
                             
+                            const button = document.createElement('button');
                             const channelItem = document.createElement('div');
                             channelItem.className = 'channel-item';
 
@@ -378,12 +383,18 @@
                             nameSpan.textContent = tvgInfo.name || title.trim();
                             infoDiv.appendChild(nameSpan);
 
-                            if (tvgInfo.name && tvgInfo.name.toLowerCase() !== title.trim().toLowerCase()) {
+                            if (tvgInfo.name && tvgInfo.name.toLowerCase() !== title.trim().toLowerCase() && title.trim()) {
                                 const descSpan = document.createElement('span');
                                 descSpan.className = 'channel-description';
                                 descSpan.textContent = title.trim();
                                 infoDiv.appendChild(descSpan);
                             }
+
+                            // ==================================================
+                            //  这是关键的修复步骤
+                            //  将包含文本的 infoDiv 添加到 channelItem 中
+                            // ==================================================
+                            channelItem.appendChild(infoDiv);
 
                             button.appendChild(channelItem);
                             channelList.appendChild(button);
@@ -420,7 +431,6 @@
             playChannel(Math.min(channels.length - 1, currentChannelIndex + 1));
         });
 
-        // Touch swipe functionality remains the same
         let touchStartX = 0;
         let touchEndX = 0;
         const playerElement = document.getElementById('player-container');
@@ -435,15 +445,12 @@
         }, { passive: true });
 
         function handleSwipe() {
-            // Add a threshold to prevent accidental swipes
             if (Math.abs(touchStartX - touchEndX) < 50) return;
 
             if (touchEndX < touchStartX) {
-                // Swipe left -> Next channel
                 playChannel(Math.min(channels.length - 1, currentChannelIndex + 1));
             }
             if (touchEndX > touchStartX) {
-                // Swipe right -> Previous channel
                 playChannel(Math.max(0, currentChannelIndex - 1));
             }
         }
