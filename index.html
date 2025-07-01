@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Free IPTV - Smart Filter</title>
+    <title>Free IPTV - Robust Live Filtering</title>
     <link href="https://vjs.zencdn.net/7.20.3/video-js.min.css" rel="stylesheet">
     <script src="https://vjs.zencdn.net/7.20.3/video.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -24,15 +24,8 @@
             --radius-s: 10px;
         }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        html {
-            scroll-behavior: smooth;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; }
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", sans-serif;
@@ -47,10 +40,7 @@
         body::before {
             content: '';
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: 0; left: 0; width: 100%; height: 100%;
             z-index: -1;
             pointer-events: none;
             background: radial-gradient(circle at 10% 20%, rgba(0, 229, 255, 0.1), transparent 30%),
@@ -64,35 +54,10 @@
             100% { transform: rotate(360deg); }
         }
 
-        .container {
-            max-width: 1500px;
-            margin: 0 auto;
-            padding: 20px;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
-
-        header {
-            text-align: center;
-            padding: 20px 0;
-            flex-shrink: 0;
-        }
-
-        h1 {
-            font-size: 2.5em;
-            font-weight: 700;
-            color: #fff;
-            letter-spacing: 1px;
-            text-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
-        }
-
-        .content {
-            display: flex;
-            gap: 25px;
-            flex-grow: 1;
-            height: calc(100% - 100px);
-        }
+        .container { max-width: 1500px; margin: 0 auto; padding: 20px; height: 100vh; display: flex; flex-direction: column; }
+        header { text-align: center; padding: 20px 0; flex-shrink: 0; }
+        h1 { font-size: 2.5em; font-weight: 700; color: #fff; letter-spacing: 1px; text-shadow: 0 0 10px rgba(255, 255, 255, 0.1); }
+        .content { display: flex; gap: 25px; flex-grow: 1; height: calc(100% - 100px); }
 
         #channel-list, #player-container {
             background-color: var(--bg-glass);
@@ -120,70 +85,56 @@
         #channel-list {
             flex: 0 0 340px;
             height: 100%;
-            padding: 20px;
+            padding: 15px;
             display: flex;
             flex-direction: column;
-            justify-content: center; /* Center the status text */
         }
         
-        /* === Filter Status Indicator === */
-        #filter-status {
-            text-align: center;
-            color: var(--text-secondary);
-        }
-        #filter-status .spinner {
-            width: 24px;
-            height: 24px;
-            border: 3px solid rgba(255, 255, 255, 0.2);
-            border-top-color: var(--accent-primary);
-            border-radius: 50%;
-            margin: 15px auto;
-            animation: spin 1s linear infinite;
-        }
-        #filter-status p {
-            font-size: 0.9em;
-        }
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
         .channel-list-inner {
             overflow-y: auto;
-            height: 100%;
+            flex-grow: 1;
             padding-right: 10px;
             margin-right: -10px;
         }
-
         .channel-list-inner::-webkit-scrollbar { width: 6px; }
         .channel-list-inner::-webkit-scrollbar-track { background: transparent; }
         .channel-list-inner::-webkit-scrollbar-thumb { background-color: rgba(255, 255, 255, 0.2); border-radius: 10px; }
 
-        #channel-list button {
-            display: flex;
-            align-items: center;
-            width: 100%;
-            padding: 12px 15px;
-            border: none;
-            background-color: transparent;
-            cursor: pointer;
-            transition: background-color 0.2s ease-out;
-            border-radius: var(--radius-m);
-            margin-bottom: 8px;
-            position: relative;
+        #filter-status {
+            flex-shrink: 0;
+            padding-top: 10px;
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 0.85em;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        #filter-status .progress-bar {
+            height: 4px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            margin-top: 8px;
             overflow: hidden;
         }
+        #filter-status .progress-bar-inner {
+            height: 100%;
+            width: 0%;
+            background-image: var(--border-glow);
+            border-radius: 2px;
+            transition: width 0.5s ease;
+        }
 
+        #channel-list button {
+            display: flex; align-items: center; width: 100%;
+            padding: 12px 15px; border: none; background-color: transparent;
+            cursor: pointer; transition: background-color 0.2s ease-out;
+            border-radius: var(--radius-m); margin-bottom: 8px;
+            position: relative; overflow: hidden;
+        }
         #channel-list button:hover { background-color: rgba(255, 255, 255, 0.05); }
-
         #channel-list button.active { background-color: rgba(255, 255, 255, 0.08); }
         #channel-list button.active::before {
-            content: '';
-            position: absolute;
-            left: 0;
-            top: 15%;
-            bottom: 15%;
-            width: 4px;
-            border-radius: 0 4px 4px 0;
+            content: ''; position: absolute; left: 0; top: 15%; bottom: 15%;
+            width: 4px; border-radius: 0 4px 4px 0;
             background-image: var(--border-glow);
             box-shadow: 0 0 8px var(--accent-primary), 0 0 12px var(--accent-secondary);
         }
@@ -215,13 +166,13 @@
         </header>
         <div class="content">
             <div id="channel-list">
-                <!-- Status indicator shown during filtering -->
+                <div class="channel-list-inner"></div>
                 <div id="filter-status">
-                    <div class="spinner"></div>
                     <p id="status-text">正在初始化...</p>
+                    <div class="progress-bar">
+                        <div id="progress-bar-inner" class="progress-bar-inner"></div>
+                    </div>
                 </div>
-                <!-- Channel list will be populated here after filtering -->
-                <div class="channel-list-inner" style="display: none;"></div>
             </div>
             <div id="player-container">
                 <div id="video-wrapper">
@@ -232,18 +183,23 @@
             </div>
         </div>
     </div>
+    
+    <!-- Container for temporary test players -->
+    <div id="test-players-container" style="display: none;"></div>
 
     <script>
         const playlistUrl = 'https://raw.githubusercontent.com/sdlkhfksl/tvn/refs/heads/main/tv.m3u';
         const channelListContainer = document.querySelector('.channel-list-inner');
-        const filterStatus = document.getElementById('filter-status');
         const statusText = document.getElementById('status-text');
-        const player = videojs('my-video', {
+        const progressBar = document.getElementById('progress-bar-inner');
+        const testPlayersContainer = document.getElementById('test-players-container');
+        const mainPlayer = videojs('my-video', {
             html5: { hls: { overrideNative: true } }
         });
 
         let currentChannelIndex = -1;
         let channels = []; // This will hold the FINAL, filtered list of channels
+        let isFirstChannelPlayed = false;
 
         // --- Helper Functions ---
         function isValidIpv4Url(string) {
@@ -263,106 +219,68 @@
             return { logo: logoMatch?.[1] || null, name: nameMatch?.[1] || null };
         }
 
-        /**
-         * Tests a single channel URL.
-         * @param {string} url - The URL of the HLS stream to test.
-         * @returns {Promise<void>} - Resolves if the channel is valid, rejects on error or timeout.
-         */
-        function testChannel(url) {
-            return new Promise((resolve, reject) => {
-                const timeout = 8000; // 8 seconds timeout for each channel
-                let timeoutId = null;
+        function addChannelToUI(channel) {
+            const index = channels.push(channel) - 1;
 
-                const cleanup = () => {
-                    clearTimeout(timeoutId);
-                    player.off(['error', 'loadedmetadata']);
-                };
+            const button = document.createElement('button');
+            const channelItem = document.createElement('div');
+            channelItem.className = 'channel-item';
 
-                player.one('error', () => {
-                    cleanup();
-                    reject(new Error('Player error'));
-                });
+            if (channel.tvgInfo.logo) {
+                const img = document.createElement('img');
+                img.src = channel.tvgInfo.logo;
+                img.className = 'channel-icon';
+                img.alt = channel.tvgInfo.name || channel.title;
+                img.onerror = function() { this.style.display = 'none'; };
+                channelItem.appendChild(img);
+            }
 
-                player.one('loadedmetadata', () => {
-                    cleanup();
-                    resolve();
-                });
+            const infoDiv = document.createElement('div');
+            infoDiv.className = 'channel-info';
+            const nameSpan = document.createElement('span');
+            nameSpan.className = 'channel-name';
+            nameSpan.textContent = channel.tvgInfo.name || channel.title;
+            infoDiv.appendChild(nameSpan);
 
-                timeoutId = setTimeout(() => {
-                    cleanup();
-                    reject(new Error('Timeout'));
-                }, timeout);
+            if (channel.tvgInfo.name && channel.tvgInfo.name.toLowerCase() !== channel.title.toLowerCase() && channel.title) {
+                const descSpan = document.createElement('span');
+                descSpan.className = 'channel-description';
+                descSpan.textContent = channel.title;
+                infoDiv.appendChild(descSpan);
+            }
 
-                player.src({ type: 'application/x-mpegURL', src: url });
-            });
-        }
+            channelItem.appendChild(infoDiv);
+            button.appendChild(channelItem);
+            button.onclick = () => playChannel(index);
+            channelListContainer.appendChild(button);
 
-        /**
-         * Renders the channel list based on the provided array of channels.
-         * @param {Array} channelsToRender - The array of valid channels.
-         */
-        function renderChannelList(channelsToRender) {
-            channelListContainer.innerHTML = ''; // Clear previous list
-            channelsToRender.forEach(channel => {
-                const button = document.createElement('button');
-                const channelItem = document.createElement('div');
-                channelItem.className = 'channel-item';
-
-                if (channel.tvgInfo.logo) {
-                    const img = document.createElement('img');
-                    img.src = channel.tvgInfo.logo;
-                    img.className = 'channel-icon';
-                    img.alt = channel.tvgInfo.name || channel.title;
-                    img.onerror = function() { this.style.display = 'none'; };
-                    channelItem.appendChild(img);
-                }
-
-                const infoDiv = document.createElement('div');
-                infoDiv.className = 'channel-info';
-                const nameSpan = document.createElement('span');
-                nameSpan.className = 'channel-name';
-                nameSpan.textContent = channel.tvgInfo.name || channel.title;
-                infoDiv.appendChild(nameSpan);
-
-                if (channel.tvgInfo.name && channel.tvgInfo.name.toLowerCase() !== channel.title.toLowerCase() && channel.title) {
-                    const descSpan = document.createElement('span');
-                    descSpan.className = 'channel-description';
-                    descSpan.textContent = channel.title;
-                    infoDiv.appendChild(descSpan);
-                }
-
-                channelItem.appendChild(infoDiv);
-                button.appendChild(channelItem);
-                channelListContainer.appendChild(button);
-            });
-
-            // Add click handlers after rendering
-            Array.from(channelListContainer.children).forEach((button, index) => {
-                button.onclick = () => playChannel(index);
-            });
+            if (!isFirstChannelPlayed) {
+                isFirstChannelPlayed = true;
+                playChannel(index);
+            }
         }
 
         function playChannel(index) {
             if (index < 0 || index >= channels.length) return;
             
             const channel = channels[index];
-            player.src({ type: 'application/x-mpegURL', src: channel.url });
-            player.play();
+            mainPlayer.src({ type: 'application/x-mpegURL', src: channel.url });
+            mainPlayer.play();
 
             const currentActive = channelListContainer.querySelector('button.active');
             if (currentActive) currentActive.classList.remove('active');
             
-            const newActiveButton = channelListContainer.children[index];
-            newActiveButton.classList.add('active');
+            const buttons = channelListContainer.querySelectorAll('button');
+            if (buttons[index]) {
+                buttons[index].classList.add('active');
+                buttons[index].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
             currentChannelIndex = index;
-            
-            newActiveButton.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
 
         // --- Main Application Flow ---
         async function main() {
             try {
-                // 1. Fetch and parse the initial playlist
                 statusText.textContent = '正在获取频道列表...';
                 const response = await fetch(playlistUrl);
                 const data = await response.text();
@@ -380,45 +298,92 @@
                     }
                 }
 
-                // 2. Filter channels sequentially
-                const validChannels = [];
-                for (const [index, channel] of allParsedChannels.entries()) {
-                    statusText.textContent = `正在检测: ${channel.tvgInfo.name || channel.title} (${index + 1}/${allParsedChannels.length})`;
-                    try {
-                        await testChannel(channel.url);
-                        validChannels.push(channel);
-                        console.log(`✅ Channel OK: ${channel.title}`);
-                    } catch (error) {
-                        console.warn(`❌ Channel Failed: ${channel.title} (${error.message})`);
-                    }
+                if (allParsedChannels.length === 0) {
+                    statusText.textContent = '未从源地址解析到任何频道。';
+                    return;
                 }
 
-                // 3. Finalize and render
-                player.reset(); // Reset player to a clean state
-                filterStatus.style.display = 'none';
-                
-                if (validChannels.length > 0) {
-                    channels = validChannels; // Set the global channels to the valid list
-                    renderChannelList(channels);
-                    channelListContainer.style.display = 'block';
-                    playChannel(0);
-                } else {
-                    statusText.textContent = '未找到可用的频道。';
-                    filterStatus.style.display = 'block'; // Re-show status with the final message
-                    filterStatus.querySelector('.spinner').style.display = 'none';
+                const CONCURRENT_CHECKS = 5;
+                let checkedCount = 0;
+                const totalChannels = allParsedChannels.length;
+
+                const worker = async () => {
+                    while (allParsedChannels.length > 0) {
+                        const channelToCheck = allParsedChannels.shift();
+                        if (!channelToCheck) continue;
+
+                        let tempPlayer;
+                        let videoElement;
+                        try {
+                            // Create a unique ID for the temporary player
+                            const tempPlayerId = `test-player-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+                            videoElement = document.createElement('video');
+                            videoElement.id = tempPlayerId;
+                            videoElement.className = 'video-js';
+                            testPlayersContainer.appendChild(videoElement);
+
+                            // Initialize a full video.js instance for testing
+                            tempPlayer = videojs(tempPlayerId, {
+                                html5: { hls: { overrideNative: true } },
+                                controls: false,
+                                autoplay: false,
+                                preload: 'auto'
+                            });
+
+                            await new Promise((resolve, reject) => {
+                                const timeout = 8000;
+                                let timeoutId = setTimeout(() => reject(new Error('Timeout')), timeout);
+                                
+                                tempPlayer.one('loadedmetadata', () => {
+                                    clearTimeout(timeoutId);
+                                    resolve();
+                                });
+                                tempPlayer.one('error', (e) => {
+                                    clearTimeout(timeoutId);
+                                    reject(new Error('Player error'));
+                                });
+                                
+                                tempPlayer.src({ type: 'application/x-mpegURL', src: channelToCheck.url });
+                            });
+                            
+                            // If we reach here, the channel is valid
+                            addChannelToUI(channelToCheck);
+
+                        } catch (error) {
+                            // Channel is invalid, do nothing
+                        } finally {
+                            // CRITICAL: Clean up the temporary player and its element to prevent memory leaks
+                            if (tempPlayer) {
+                                tempPlayer.dispose();
+                            }
+                            if (videoElement && videoElement.parentNode) {
+                                videoElement.parentNode.removeChild(videoElement);
+                            }
+                            
+                            checkedCount++;
+                            const progress = (checkedCount / totalChannels) * 100;
+                            progressBar.style.width = `${progress}%`;
+                            statusText.textContent = `检测中... (${checkedCount}/${totalChannels}) | 已找到 ${channels.length} 个有效频道`;
+                            if (checkedCount === totalChannels) {
+                                statusText.textContent = `检测完成！共找到 ${channels.length} 个有效频道。`;
+                            }
+                        }
+                    }
+                };
+
+                for (let i = 0; i < CONCURRENT_CHECKS; i++) {
+                    worker();
                 }
 
             } catch (error) {
                 console.error('Failed to initialize:', error);
                 statusText.textContent = '加载频道列表失败，请刷新页面重试。';
-                filterStatus.querySelector('.spinner').style.display = 'none';
             }
         }
 
-        // Start the application
         main();
 
-        // --- Event Listeners for UI interaction ---
+        // --- Event Listeners for UI interaction (Unchanged) ---
         document.addEventListener('keydown', e => {
             if (e.key === 'ArrowUp') {
                 e.preventDefault();
@@ -429,8 +394,7 @@
             }
         });
 
-        let touchStartX = 0;
-        let touchEndX = 0;
+        let touchStartX = 0, touchEndX = 0;
         const playerElement = document.getElementById('player-container');
         playerElement.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; }, { passive: true });
         playerElement.addEventListener('touchend', e => {
@@ -439,7 +403,6 @@
             if (touchEndX < touchStartX) playChannel(Math.min(channels.length - 1, currentChannelIndex + 1));
             if (touchEndX > touchStartX) playChannel(Math.max(0, currentChannelIndex - 1));
         }, { passive: true });
-
     </script>
 </body>
 </html>
