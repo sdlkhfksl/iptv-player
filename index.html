@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FrostGlass IPTV | Premium Edition</title>
+    <link href="https://vjs.zencdn.net/7.20.3/video-js.min.css" rel="stylesheet">
+    <script src="https://vjs.zencdn.net/7.20.3/video.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-main: #0b0e15;
+            --bg-card: rgba(19, 24, 38, 0.75);
+            --text-primary: #e6edf7;
+            --text-secondary: #8496b6;
+            --accent: #7b68ee;
+            --accent-light: #97a2ff;
+            --error-color: #ff6b6b;
+            --border-color: rgba(128, 153, 206, 0.2);
+            --radius-lg: 20px;
+            --radius-md: 12px;
+            --radius-sm: 6px;
+            --shadow: 0 24px 60px rgba(0, 0, 0, 0.4);
+            --transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: var(--bg-main);
+            color: var(--text-primary);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            height: 100vh;
+            overflow: hidden;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        body::before {
+            content: '';
+            position: fixed;
+            top: -20%;
+            left: -20%;
+            width: 140%;
+            height: 140%;
+            background: 
+                radial-gradient(circle at 20% 30%, rgba(59, 66, 199, 0.08), transparent 25%),
+                radial-gradient(circle at 80% 70%, rgba(87, 62, 184, 0.08), transparent 25%),
+                radial-gradient(circle at 50% 90%, rgba(15, 32, 87, 0.15), transparent 40%),
+                linear-gradient(135deg, #0a0d15, #0b0e1a 70%);
+            z-index: -2;
+            animation: bg-pan 240s infinite linear;
+        }
+        
+        @keyframes bg-pan {
+            0% {
+                transform: rotate(0deg) scale(1.1);
+            }
+            100% {
+                transform: rotate(360deg) scale(1.1);
+            }
+        }
+        
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                linear-gradient(rgba(11, 14, 21, 0.7) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(11, 14, 21, 0.7) 1px, transparent 1px);
+            background-size: 48px 48px;
+            z-index: -1;
+            opacity: 0.2;
+        }
+        
+        .frost-container {
+            display: flex;
+            width: 100%;
+            max-width: 1600px;
+            height: 90vh;
+            background: var(--bg-card);
+            backdrop-filter: blur(16px) saturate(200%);
+            -webkit-backdrop-filter: blur(16px) saturate(200%);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow),
+                        0 0 40px rgba(0, 20, 60, 0.2),
+                        0 0 0 1px rgba(255, 255, 255, 0.035);
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .frost-container::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border-radius: var(--radius-lg);
+            pointer-events: none;
+            box-shadow: inset 0 0 24px rgba(255, 255, 255, 0.04),
+                        inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+            z-index: 2;
+        }
+        
+        .channel-panel {
+            width: 320px;
+            height: 100%;
+            border-right: 1px solid rgba(30, 40, 60, 0.5);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            padding: 24px 0 0;
+            transition: width 0.4s ease;
+            background: rgba(19, 24, 38, 0.65);
+        }
+        
+        .channel-panel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 1px;
+            height: 100%;
+            background: linear-gradient(to bottom, 
+                rgba(100, 120, 240, 0) 0%, 
+                rgba(123, 104, 238, 0.4) 50%, 
+                rgba(100, 120, 240, 0) 100%);
+        }
+        
+        .panel-header {
+            padding: 0 24px 16px;
+            margin-bottom: 10px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .panel-title {
+            display: flex;
+            align-items: center;
+            font-family: 'Crimson Pro', serif;
+            font-weight: 500;
+            font-size: 1.6rem;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+            position: relative;
+            background: linear-gradient(120deg, #e6edf7, #9eb8ff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            padding-left: 42px;
+        }
+        
+        .panel-title::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 32px;
+            height: 2px;
+            background: var(--accent);
+            border-radius: 2px;
+            box-shadow: 0 0 10px rgba(123, 104, 238, 0.5);
+        }
+        
+        .panel-subtitle {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            padding-left: 42px;
+            opacity: 0.7;
+            letter-spacing: 0.5px;
+        }
+        
+        .channel-header {
+            padding: 0 24px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .channel-category {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--accent-light);
+            font-weight: 500;
+            opacity: 0.9;
+        }
+        
+        .channel-count {
+            font-size: 0.8rem;
+            color: var(--text-primary);
+            background: rgba(123, 104, 238, 0.15);
+            padding: 4px 12px;
+            border-radius: 20px;
+            border: 1px solid rgba(123, 104, 238, 0.3);
+        }
+        
+        .channel-search {
+            padding: 0 24px 24px;
+            position: relative;
+        }
+        
+        .search-box {
+            width: 100%;
+            background: rgba(15, 20, 35, 0.5);
+            border: 1px solid rgba(100, 120, 143, 0.25);
+            border-radius: var(--radius-sm);
+            padding: 14px;
+            padding-left: 44px;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            transition: var(--transition);
+            outline: none;
+            font-weight: 300;
+            box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .search-box:focus {
+            background: rgba(20, 25, 45, 0.7);
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(123, 104, 238, 0.2),
+                        inset 0 1px 4px rgba(0, 0, 0, 0.4);
+        }
+        
+        .search-icon {
+            position: absolute;
+            left: 40px;
+            top: 15px;
+            color: rgba(132, 150, 182, 0.5);
+            font-size: 1.1rem;
+            z-index: 2;
+            pointer-events: none;
+        }
+        
+        .channel-scroll {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px 14px 30px;
+        }
+        
+        .channel-scroll::-webkit-scrollbar {
+            width: 6px;
+            border-left: 1px solid rgba(30, 40, 60, 0.5);
+        }
+        
+        .channel-scroll::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        
+        .channel-scroll::-webkit-scrollbar-thumb {
+            background: linear-gradient(to bottom, 
+                rgba(90, 100, 220, 0.4) 0%, 
+                rgba(123, 104, 238, 0.6) 50%, 
+                rgba(90, 100, 220, 0.4) 100%);
+            border-radius: 4px;
+        }
+        
+        .channel-item {
+            display: flex;
+            align-items: center;
+            padding: 14px 18px;
+            border-radius: var(--radius-sm);
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: var(--transition);
+            position: relative;
+            border: 1px solid transparent;
+        }
+        
+        .channel-item:hover {
+            background: rgba(123, 104, 238, 0.08);
+            border-color: rgba(123, 104, 238, 0.15);
+            transform: translateY(-2px);
+        }
+        
+        .channel-item.active {
+            background: linear-gradient(135deg, 
+                  rgba(123, 104, 238, 0.15) 0%, 
+                  rgba(70, 60, 170, 0.1) 100%);
+            border: 1px solid rgba(123, 104, 238, 0.3);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4),
+                        inset 0 0 0 1px rgba(170, 190, 255, 0.15);
+            transform: translateY(0) !important;
+        }
+        
+        .channel-item.active::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 70%;
+            width: 3px;
+            background: var(--accent);
+            border-radius: 0 3px 3px 0;
+            box-shadow: 0 0 10px var(--accent);
+        }
+        
+        .channel-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #1e2238, #2d3250);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 16px;
+            flex-shrink: 0;
+            color: var(--accent);
+            box-shadow: 
+                0 2px 10px rgba(0, 0, 0, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(60, 65, 100, 0.5);
+        }
+        
+        .channel-info {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .channel-name {
+            font-weight: 500;
+            font-size: 0.95rem;
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: rgba(230, 237, 247, 0.9);
+        }
+        
+        .channel-url {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-family: monospace;
+            opacity: 0.7;
+        }
+        
+        .player-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 24px;
+        }
+        
+        .player-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(100, 120, 143, 0.15);
+        }
+        
+        .player-title-container {
+            min-width: 0;
+            position: relative;
+            overflow: hidden;
+            padding-bottom: 8px;
+        }
+        
+        .player-title-container::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            width: 50px;
+            height: 2px;
+            background: linear-gradient(90deg, var(--accent), transparent);
+            border-radius: 1px;
+        }
+        
+        .player-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            position: relative;
+            font-family: 'Inter', sans-serif;
+            color: white;
+        }
+        
+        .player-subtitle {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-weight: 400;
+            opacity: 0.8;
+        }
+        
+        .player-controls {
+            display: flex;
+            gap: 12px;
+        }
+        
+        .control-btn {
+            width: 38px;
+            height: 38px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, rgba(25, 30, 45, 0.6), rgba(15, 20, 35, 0.8));
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(100, 120, 143, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: var(--text-primary);
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .control-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(120deg, rgba(123, 104, 238, 0.3), transparent);
+            opacity: 0;
+            transition: var(--transition);
+        }
+        
+        .control-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+            border-color: rgba(123, 104, 238, 0.5);
+        }
+        
+        .control-btn:hover::before {
+            opacity: 0.5;
+        }
+        
+        .control-btn:active {
+            transform: translateY(0);
+        }
+        
+        .player-wrapper {
+            flex: 1;
+            background: linear-gradient(135deg, #0c0f18, #11172a);
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            position: relative;
+            box-shadow: 
+                inset 0 0 0 1px rgba(50, 70, 120, 0.15),
+                0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+        
+        .video-js {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .video-js .vjs-big-play-button {
+            border-radius: 50%;
+            width: 70px;
+            height: 70px;
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            font-size: 3.2em;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            line-height: 70px;
+            transition: var(--transition);
+            color: rgba(255, 255, 255, 0.8);
+            box-shadow: 0 0 40px rgba(0, 0, 0, 0.5);
+        }
+        
+        .video-js .vjs-big-play-button:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            transform: translate(-50%, -50%) scale(1.05);
+        }
+        
+        #status-bar {
+            width: 100%;
+            padding: 16px 20px;
+            background: linear-gradient(135deg, 
+                  rgba(18, 23, 36, 0.7) 0%, 
+                  rgba(15, 20, 35, 0.8) 100%);
+            backdrop-filter: blur(5px);
+            border-radius: var(--radius-md);
+            margin-top: 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            transition: all 0.4s ease;
+            border: 1px solid rgba(70, 90, 140, 0.2);
+            box-shadow: 
+                inset 0 1px 0 rgba(255, 255, 255, 0.03),
+                0 8px 30px rgba(0, 0, 0, 0.1);
+            font-weight: 300;
+        }
+        
+        #status-bar.error {
+            background: linear-gradient(135deg, 
+                  rgba(46, 16, 20, 0.7) 0%, 
+                  rgba(30, 12, 15, 0.8) 100%);
+            color: var(--error-color);
+            border-color: rgba(255, 77, 77, 0.3);
+        }
+        
+        #status-bar.error i {
+            color: var(--error-color);
+        }
+        
+        #status-bar i {
+            color: var(--accent);
+            font-size: 1rem;
+            min-width: 18px;
+        }
+        
+        #loading-indicator {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 20;
+        }
+        
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(123, 104, 238, 0.2);
+            border-top: 4px solid var(--accent);
+            border-radius: 50%;
+            animation: spin 1s cubic-bezier(0.77, 0.17, 0.42, 0.78) infinite;
+            box-shadow: inset 0 0 0 4px rgba(15, 20, 35, 0.4),
+                        0 0 15px rgba(123, 104, 238, 0.3);
+        }
+        
+        .spinner-glow {
+            position: absolute;
+            top: -7px;
+            left: -7px;
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            background: rgba(123, 104, 238, 0.08);
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 0.5; transform: scale(0.8); } 
+            50% { opacity: 0.2; transform: scale(1.1); }
+            100% { opacity: 0.5; transform: scale(0.8); }
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); } 
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 1100px) {
+            .player-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+            
+            .player-controls {
+                align-self: flex-end;
+            }
+        }
+        
+        @media (max-width: 900px) {
+            .frost-container {
+                flex-direction: column;
+                height: auto;
+                min-height: 95vh;
+            }
+            
+            .channel-panel {
+                width: 100%;
+                height: 40vh;
+                border-right: none;
+                border-bottom: 1px solid rgba(30, 40, 60, 0.5);
+            }
+            
+            .player-container {
+                min-height: 55vh;
+            }
+        }
+        
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+            
+            .player-title {
+                font-size: 1.3rem;
+            }
+            
+            .panel-title {
+                font-size: 1.45rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="frost-container">
+        <div class="channel-panel">
+            <div class="panel-header">
+                <div class="panel-title"><span>FROSTGLASS</span> TV</div>
+                <div class="panel-subtitle">PREMIUM DIGITAL EXPERIENCE</div>
+            </div>
+            
+            <div class="channel-search">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" id="search-input" class="search-box" placeholder="搜索频道...">
+            </div>
+            
+            <div class="channel-header">
+                <div class="channel-category">高清电视频道</div>
+                <div id="channel-count" class="channel-count">0</div>
+            </div>
+            
+            <div id="channel-scroll" class="channel-scroll">
+                <div class="loading-text" style="text-align: center; padding: 40px; color: var(--text-secondary);">
+                    <i class="fas fa-spinner fa-spin"></i> 正在初始化频道列表...
+                </div>
+            </div>
+        </div>
+        
+        <div class="player-container">
+            <div class="player-header">
+                <div class="player-title-container">
+                    <div id="player-title" class="player-title">等待频道选择...</div>
+                    <div id="player-subtitle" class="player-subtitle"></div>
+                </div>
+                
+                <div id="player-controls" class="player-controls">
+                    <div class="control-btn" title="上一个频道" id="prev-channel">
+                        <i class="fas fa-chevron-left"></i>
+                    </div>
+                    <div class="control-btn" title="下一个频道" id="next-channel">
+                        <i class="fas fa-chevron-right"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="player-wrapper">
+                <video-js id="my-video" class="video-js vjs-big-play-centered" controls preload="auto" data-setup='{}'></video-js>
+                <div id="loading-indicator">
+                    <div class="spinner-glow"></div>
+                    <div class="loading-spinner"></div>
+                </div>
+            </div>
+            
+            <div id="status-bar">
+                <i class="fas fa-info-circle"></i>
+                <span id="status-message">使用方向键或滑动切换频道</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const playlistUrl = '/api/playlist';
+        const channelScroll = document.getElementById('channel-scroll');
+        const player = videojs('my-video', {
+            html5: { hls: { overrideNative: true } }
+        });
+        
+        const playerTitle = document.getElementById('player-title');
+        const playerSubtitle = document.getElementById('player-subtitle');
+        const channelCount = document.getElementById('channel-count');
+        const prevBtn = document.getElementById('prev-channel');
+        const nextBtn = document.getElementById('next-channel');
+        const searchInput = document.getElementById('search-input');
+        const loadingIndicator = document.getElementById('loading-indicator');
+        const statusBar = document.getElementById('status-bar');
+        const statusMessage = document.getElementById('status-message');
+        
+        let currentChannel = null;
+        let allChannels = [];
+        let filteredChannels = [];
+
+        function isValidIpv4Url(string) {
+            try { new URL(string); return true; } catch (_) { return false; }
+        }
+
+        function parseM3ULine(line) {
+            return (line.startsWith('http://') || line.startsWith('https://')) ? line.trim() : null;
+        }
+
+        function extractTvgInfo(extinf) {
+            const logoMatch = extinf.match(/tvg-logo="([^"]+)"/);
+            const nameMatch = extinf.match(/tvg-name="([^"]+)"/);
+            return {
+                logo: logoMatch ? logoMatch[1] : null,
+                name: nameMatch ? nameMatch[1] : null
+            };
+        }
+        
+        function createDefaultIcon() {
+            const icon = document.createElement('div');
+            icon.className = 'channel-icon';
+            icon.innerHTML = '<i class="fas fa-tv"></i>';
+            return icon;
+        }
+
+        function renderChannelList() {
+            const searchTerm = searchInput.value.toLowerCase();
+            filteredChannels = allChannels.filter(channel => 
+                (channel.tvgInfo.name && channel.tvgInfo.name.toLowerCase().includes(searchTerm)) ||
+                (channel.title && channel.title.toLowerCase().includes(searchTerm))
+            );
+            
+            channelScroll.innerHTML = '';
+            channelCount.textContent = `${filteredChannels.length}`;
+            
+            filteredChannels.forEach(channel => {
+                const channelElement = document.createElement('div');
+                channelElement.className = 'channel-item';
+                if (currentChannel && currentChannel.url === channel.url) {
+                    channelElement.classList.add('active');
+                }
+                
+                const channelIcon = channel.tvgInfo.logo ? document.createElement('img') : createDefaultIcon();
+                if (channel.tvgInfo.logo) {
+                    channelIcon.className = 'channel-icon';
+                    channelIcon.src = channel.tvgInfo.logo;
+                    channelIcon.onerror = function() {
+                        this.replaceWith(createDefaultIcon());
+                    };
+                }
+                
+                const channelInfo = document.createElement('div');
+                channelInfo.className = 'channel-info';
+                
+                const channelName = document.createElement('div');
+                channelName.className = 'channel-name';
+                channelName.textContent = channel.tvgInfo.name || channel.title;
+                
+                const channelUrl = document.createElement('div');
+                channelUrl.className = 'channel-url';
+                try {
+                    const url = new URL(channel.url);
+                    channelUrl.textContent = url.hostname;
+                } catch (e) {
+                    channelUrl.textContent = channel.url.slice(0, 40) + (channel.url.length > 40 ? '...' : '');
+                }
+                
+                channelInfo.appendChild(channelName);
+                channelInfo.appendChild(channelUrl);
+                
+                channelElement.appendChild(channelIcon);
+                channelElement.appendChild(channelInfo);
+                
+                channelElement.onclick = () => playChannel(channel);
+                channelScroll.appendChild(channelElement);
+            });
+            
+            if (filteredChannels.length === 0 && allChannels.length > 0) {
+                channelScroll.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-secondary);">未找到匹配的频道</div>';
+            }
+        }
+
+        function playChannel(channel) {
+            if (!channel) return;
+            
+            currentChannel = channel;
+            loadingIndicator.style.display = 'block';
+            playerTitle.textContent = channel.tvgInfo.name || channel.title;
+            try {
+                const url = new URL(channel.url);
+                playerSubtitle.textContent = url.hostname;
+            } catch (e) {
+                playerSubtitle.textContent = channel.url;
+            }
+            
+            player.src({ type: 'application/x-mpegURL', src: channel.url });
+            player.play().catch(e => console.error('Play command failed:', e));
+            
+            renderChannelList();
+            
+            const activeElement = channelScroll.querySelector('.active');
+            if (activeElement) {
+                activeElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+        
+        function playNext() {
+            if (!currentChannel || filteredChannels.length === 0) return;
+            const currentIndex = filteredChannels.findIndex(c => c.url === currentChannel.url);
+            const nextIndex = (currentIndex + 1) % filteredChannels.length;
+            playChannel(filteredChannels[nextIndex]);
+        }
+
+        function playPrev() {
+            if (!currentChannel || filteredChannels.length === 0) return;
+            const currentIndex = filteredChannels.findIndex(c => c.url === currentChannel.url);
+            const prevIndex = (currentIndex - 1 + filteredChannels.length) % filteredChannels.length;
+            playChannel(filteredChannels[prevIndex]);
+        }
+
+        async function initialize() {
+            try {
+                const response = await fetch(playlistUrl);
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const data = await response.text();
+                
+                const lines = data.split('\n');
+                for (let i = 0; i < lines.length; i++) {
+                    if (lines[i].startsWith('#EXTINF')) {
+                        const tvgInfo = extractTvgInfo(lines[i]);
+                        const title = lines[i].split(',')[1] || 'Untitled Stream';
+                        const url = parseM3ULine(lines[i+1]);
+                        if (url && isValidIpv4Url(url)) {
+                            allChannels.push({ title: title.trim(), url: url.trim(), tvgInfo });
+                        }
+                    }
+                }
+                
+                renderChannelList();
+                if (allChannels.length > 0) {
+                    playChannel(allChannels[0]);
+                    statusMessage.textContent = `已加载 ${allChannels.length} 个频道`;
+                } else {
+                    statusMessage.textContent = '未找到可用频道';
+                    channelScroll.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-secondary);">播放列表为空或格式错误</div>';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                statusMessage.textContent = '频道列表加载失败';
+                statusBar.classList.add('error');
+                channelScroll.innerHTML = `<div style="text-align: center; padding: 30px; color: var(--error-color);">
+                    <i class="fas fa-exclamation-triangle" style="font-size: 2rem; margin-bottom: 15px;"></i>
+                    <p>频道列表加载失败</p>
+                    <p style="font-size: 0.9rem; margin-top: 10px;">${error.message || '请检查网络连接'}</p>
+                </div>`;
+            }
+        }
+
+        player.on('playing', () => {
+            loadingIndicator.style.display = 'none';
+            statusBar.classList.remove('error');
+            statusMessage.textContent = `正在播放: ${playerTitle.textContent}`;
+        });
+        
+        player.on('error', () => {
+            loadingIndicator.style.display = 'none';
+            statusBar.classList.add('error');
+            statusMessage.textContent = `播放错误: ${playerTitle.textContent}`;
+        });
+        
+        player.on('waiting', () => {
+            loadingIndicator.style.display = 'block';
+            statusBar.classList.remove('error');
+            statusMessage.textContent = '正在缓冲...';
+        });
+        
+        prevBtn.onclick = playPrev;
+        nextBtn.onclick = playNext;
+        
+document.addEventListener('keydown', e => {
+            if (document.activeElement === searchInput) return;
+            if (e.key === 'ArrowUp') { e.preventDefault(); playPrev(); }
+            if (e.key === 'ArrowDown') { e.preventDefault(); playNext(); }
+        });
+        
+        let touchStartX = 0;
+        player.el().addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].clientX; }, { passive: true });
+        player.el().addEventListener('touchend', e => {
+            const touchEndX = e.changedTouches[0].clientX;
+            if (touchEndX < touchStartX - 50) playNext();
+            if (touchEndX > touchStartX + 50) playPrev();
+        }, { passive: true });
+        
+        searchInput.addEventListener('input', renderChannelList);
+
+        initialize();
+    </script>
+</body>
+</html>
